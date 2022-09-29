@@ -13,7 +13,7 @@ class _totconnection:
         self._tconnection = STb.tconnection()
 
     def __repr__(self):
-        return f"Total connection"      
+        return f"Total connection on the ST bundle"      
 
     def display(self,typ):
 
