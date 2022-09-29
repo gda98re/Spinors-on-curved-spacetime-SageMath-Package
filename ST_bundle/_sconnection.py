@@ -17,7 +17,7 @@ class _sconnection(BundleConnection):
         
         self._A_one_form = A
         
-        self._A_tetrad = STb.set_tscalar_from_Components(["down"],A.comp(STb.tframe))
+        self._A_tetrad = STb.set_scalar_from_Components(["down"],A.comp(STb.tframe))
         
         Id = STb.Identity([])
         
@@ -71,7 +71,7 @@ class _sconnection(BundleConnection):
         res = s_section.scov_der(self.connection_coef)                                                         
         #D(V,T_{(a)...}^{(b)...})                                                         
         if(isinstance(tangent_section,VectorField)):
-            comp = self.STbundle.set_tscalar_from_Components(["up"],tangent_section.comp(self.STbundle.tframe))
+            comp = self.STbundle.set_scalar_from_Components(["up"],tangent_section.comp(self.STbundle.tframe))
             res = comp.tcontract(0,res,len(res.tindices)-1)
             return res
                 

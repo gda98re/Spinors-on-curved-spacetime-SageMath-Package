@@ -40,14 +40,14 @@ class _tconnection(BundleConnection):
         #convert a tensor on the spin bundle to a tindices object with no tindices or a tensor on the frame bundle to a scalar with tindces objects                                                        
         if(isinstance(section,FreeModuleTensor) and section.base_module() == self.STbundle.fbundle.section_module()): 
             tindices_list = ["up" for k in range(0,section.tensor_type()[0])]+["down" for k in range(0,section.tensor_type()[1])]
-            section = self.STbundle.set_tscalar_from_Components(tindices_list,section.comp())
+            section = self.STbundle.set_scalar_from_Components(tindices_list,section.comp())
         elif(isinstance(section,FreeModuleTensor) and section.base_module() == self.STbundle.sbundle.section_module()):
             section = self.STbundle.spin_tensor([],section.tensor_type())
                                                                  
         res = section.tcov_der()                                                         
         #D(V,T_{(a)...}^{(b)...})                                                         
         if(isinstance(tangent_section,VectorField)):
-            comp = self.STbundle.set_tscalar_from_Components(["up"],tangent_section.comp(self.STbundle.tframe))
+            comp = self.STbundle.set_scalar_from_Components(["up"],tangent_section.comp(self.STbundle.tframe))
             res = comp.tcontract(0,res,len(res.tindices)-1)
             return res
                 

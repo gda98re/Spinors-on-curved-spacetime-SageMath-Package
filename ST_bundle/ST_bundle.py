@@ -92,7 +92,7 @@ class ST_bundle():
         return _totconnection(self,A)
 
     
-    def set_tscalar_from_Components(self,tindices_list,Comp):
+    def set_scalar_from_Components(self,tindices_list,Comp):
         
         if(Comp._frame != self.tframe): raise TypeError("Components must be with respect to the tframe")
         
@@ -147,7 +147,7 @@ class ST_bundle():
     def Ricci_rotation_coefficents(self,tindices_list):
         
         if(len(tindices_list) != 3): raise TypeError("Wrong number of indices")
-        res = self.set_tscalar_from_Components(["up","down","down"],self.connection.coef(self.tframe))
+        res = self.set_scalar_from_Components(["up","down","down"],self.connection.coef(self.tframe))
         
         if(tindices_list == ["down","down","up"]): res = res.down(0).up(2); res.set_immutable()
         if(tindices_list == ["down","up","down"]): res = res.down(0).up(1); res.set_immutable()
