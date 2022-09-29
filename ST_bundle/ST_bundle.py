@@ -28,6 +28,9 @@ class ST_bundle():
         self._fb_coef = self.Ricci_rotation_coefficents(["up","down","down"])
         self._spinor_coef = self.spinor_coef_calculator()
     
+    def __repr__(self):
+        return f"ST bundle with respect to the Manifold {self.M} and to the tetrad frame {self.tframe}"
+
     @property
     def M(self):
         return self._M

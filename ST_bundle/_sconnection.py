@@ -34,7 +34,8 @@ class _sconnection(BundleConnection):
             for i in range(0,4):
                 for j in range(0,4):
                     super(_sconnection,self).set_connection_form(i,j)[:] = connection_one_forms[j][i] + Id.comp[j,i]*A
-        
+       
+
     @property
     def STbundle(self):
         return self._STb

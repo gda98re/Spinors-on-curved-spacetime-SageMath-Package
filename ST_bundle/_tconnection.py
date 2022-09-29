@@ -14,7 +14,7 @@ class _tconnection(BundleConnection):
         
         for i in range(0,4):
             for j in range(0,4):
-                self.set_connection_form(i,j)[:] = STb.connection.connection_form(j,i,STb.tframe)
+                self.set_connection_form(i,j)[:] = STb.connection.connection_form(j,i,STb.tframe) 
      
     @property   
     def STbundle(self):

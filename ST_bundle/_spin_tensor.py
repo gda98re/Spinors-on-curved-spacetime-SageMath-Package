@@ -223,17 +223,19 @@ class _spin_tensor(tindices_object):
         res = _spin_tensor(self.STbundle,self.tindices,(0,1))
 
         lst,loop_command,indent = _spin_tensor.nested_loop("i",0,len(self.tindices),"","","")
-        loop_command += "psi_bar = self.STbundle.section_module().tensor((0,1))\n"
+        loop_command += "psi_bar = self.STbundle.sbundle.section_module().tensor((0,1))\n"
         loop_command += indent
         loop_command += "for k in range(0,4):"
         loop_command += indent
         if(len(self.tindices) == 0):
             loop_command += "\t" + f"psi_bar[self.STbundle.sframe,k] = self.comp[k].expr().conjugate()\n"
+            loop_command += indent
+            loop_command += f"res.comp = (psi_bar*(self.STbundle.Dirac_matrices('up')[0])).trace()"
         else:
             loop_command += "\t" + f"psi_bar[self.STbundle.sframe,k] = self[{lst[:-1]}][k].expr().conjugate()\n"
-        loop_command += indent
-        loop_command += f"res[{lst[:-1]}] = (psi_bar*(self.STbundle.Dirac_matrices('up')[0])).trace()"
-        print(loop_command)
+            loop_command += indent
+            loop_command += f"res[{lst[:-1]}] = (psi_bar*(self.STbundle.Dirac_matrices('up')[0])).trace()"
+
         exec(loop_command)
 
         return res

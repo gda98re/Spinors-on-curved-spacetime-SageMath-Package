@@ -3,6 +3,7 @@ from ST_bundle._scalar import _scalar
 
 from sage.tensor.modules.tensor_free_module import FreeModuleTensor
 from sage.manifolds.differentiable.vectorfield import VectorField
+from sage.manifolds.differentiable.bundle_connection import BundleConnection
 
 class _totconnection:
 
@@ -10,7 +11,20 @@ class _totconnection:
                 
         self._sconnection = STb.sconnection(A)
         self._tconnection = STb.tconnection()
-    
+
+    def __repr__(self):
+        return f"Total connection"      
+
+    def display(self,typ):
+
+        if(typ == "t"):
+            return self.tconnection.display()
+        elif(typ == "s"):
+            return self.sconnection.display()
+        else:
+            raise TypeError("Argument must be either 't' or 's'")
+
+
     @property
     def STbundle(self):
         return self.sconnection.STbundle
