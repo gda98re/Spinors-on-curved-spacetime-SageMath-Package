@@ -214,7 +214,7 @@ class tindices_object(abc.ABC):
         return pos1,pos2
     
     
-    def trace_alg(self,res,tpos1,tpos2,spos1,spos2,operator = "ttrace"): #pos1 and pos2 must be lists
+    def trace_alg(self,res,tpos1,tpos2,spos1=0,spos2=0,operator = "ttrace"): #pos1 and pos2 must be lists
         
 
         if(operator == "ttrace"):
