@@ -224,10 +224,9 @@ class tindices_object(abc.ABC):
         else:
             raise TypeError("Wrong operator type")
 
-        if(len(self.tindices) == 0 or len(self.tindices) == 1): raise TypeError("Can't trace an object with zero or one tindices")
         
-        lst_run,loop_command,indent = tindices_object.nested_loop("i",0,len(self.tindices)-2*len(pos1),"","","")
-        _,loop_command,indent = tindices_object.nested_loop("s",0,len(pos1),"",loop_command,indent)  
+        lst_run,loop_command,indent = tindices_object.nested_loop("i",0,len(self.tindices)-2*len(tpos1),"","","")
+        _,loop_command,indent = tindices_object.nested_loop("s",0,len(tpos1),"",loop_command,indent)  
         lst_total = [k for k in range(0,len(self.tindices))] # [0,1,2,...,number of tindices-1]
         
         lst = ""
@@ -235,12 +234,12 @@ class tindices_object(abc.ABC):
         for k in range(0,len(self.tindices)):
             lst += f"i{k},"
           
-        for k in range(0,len(pos1)):
-            lst = lst.replace(f"i{pos1[k]},",f"s{k},")
-            lst_total.remove(pos1[k])
-        for k in range(0,len(pos2)):
-            lst = lst.replace(f"i{pos2[k]},",f"s{k},")
-            lst_total.remove(pos2[k])
+        for k in range(0,len(tpos1)):
+            lst = lst.replace(f"i{tpos1[k]},",f"s{k},")
+            lst_total.remove(tpos1[k])
+        for k in range(0,len(tpos2)):
+            lst = lst.replace(f"i{tpos2[k]},",f"s{k},")
+            lst_total.remove(tpos2[k])
         for k in range(0,len(lst_total)):
             lst = lst.replace(f"i{lst_total[k]},",f"i{k},")
 
@@ -263,8 +262,7 @@ class tindices_object(abc.ABC):
             end = f",{spos2})"
         else:
             return TypeError("Wrong operator type")
-    
-        if(len(self.tindices) == 0 or len(other.tindices) == 0): raise TypeError("Can't contract an object with zero tindices")
+
         
         lst_run,loop_command,indent = tindices_object.nested_loop("i",0,len(self.tindices)-len(tpos1),"","","")
         lst_run,loop_command,indent = tindices_object.nested_loop("j",0,len(other.tindices)-len(tpos2),lst_run,loop_command,indent)
