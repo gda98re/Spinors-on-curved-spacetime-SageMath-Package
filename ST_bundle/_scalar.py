@@ -93,7 +93,7 @@ class _scalar(tindices_object):
             else:
                 res = _scalar(self.STbundle,res_tindices_list)
                 
-            super().tensor_product_alg(other,res)
+            super().tensor_product_alg(other,res) # (*)
             return res
        
     def __rmul__(self,other):
@@ -105,44 +105,82 @@ class _scalar(tindices_object):
     def __rmatmul__(self,other):
         return self.__mul__(other)
         
-    def ttrace(self,pos1=0,pos2=1): #trace of tindices
+    def trace(self,*args): #trace of tindices
         
-        pos1,pos2 = self.check_tindices(self,pos1,pos2,"trace")
+        nargs = len(args)
+        if(nargs == 0): 
+            if(self.tindices == ["up","down"] or self.tindices == ["down","up"]):
+                tpos1 = 0
+                tpos2 = 1
+            else:
+                raise TypeError("At least two indices must be provided")
+        elif(nargs == 1):
+            raise TypeError("At least two indices must be provided")
+        elif(nargs == 2):
+            tpos1 = args[0]
+            tpos2 = args[1]
+        else:
+            raise TypeError("Too many arguments") 
+        
+        tpos1,tpos2 = self.check_tindices(self,tpos1,tpos2,"trace")
         res_tindices_list = list(self.tindices)
         
-        for k in pos1:
+        for k in tpos1:
             res_tindices_list[k] = None
-        for k in pos2:
+        for k in tpos2:
             res_tindices_list[k] = None
-        for k in range(0,2*len(pos1)):
+        for k in range(0,2*len(tpos1)):
             res_tindices_list.remove(None) 
         
         res = _scalar(self.STbundle,res_tindices_list)
-        super().trace_alg(res,pos1,pos2)
+        super().trace_alg(res,tpos1,tpos2)
         if(len(res.tindices) == 0): 
             return res.comp
         else:
             return res
           
-    def tcontract(self,pos1,other,pos2):
+    def contract(self,*args): #contraction on both sindices or tindices
+        
+        nargs = len(args)
+        for i, arg in enumerate(args):
+            if isinstance(arg,tindices_object):
+                other = arg
+                it = i
+                break
+        else:
+            raise TypeError("a tindices object must be provided in the argument list")
+            
+        if(it == 0):
+            tpos1 = len(self.tindices)-1 #last as default
+        elif(it == 1):   
+            tpos1 = args[0]
+        else:
+            raise TypeError("Too many arguments")
+
+        if(nargs-it-1 == 0):
+            tpos2 = 0 #first as default
+        elif(nargs-it-1 == 1):
+            tpos2 = args[it+1]
+        else:
+            raise TypeError("Too many arguments")
+        
  
-        pos1,pos2 = self.check_tindices(other,pos1,pos2,"contract")
+        tpos1,tpos2 = self.check_tindices(other,tpos1,tpos2,"contract")
         res_tindices_list = list(self.tindices+other.tindices)
         
-        for k in pos1:
+        for k in tpos1:
             res_tindices_list[k] = None
-        for k in pos2:
+        for k in tpos2:
             res_tindices_list[k+len(self.tindices)] = None
-        for k in range(0,2*len(pos1)):
+        for k in range(0,2*len(tpos1)):
             res_tindices_list.remove(None)
-        
-        if(not isinstance(other,tindices_object)): raise TypeError("Can't contract with objects that are not tindices_object instances") 
+         
         if(isinstance(other,_scalar)):
             res = _scalar(self.STbundle,res_tindices_list)
         elif(isinstance(other,_spin_tensor)):
             res = _spin_tensor(self.STbundle,res_tindices_list,other.sindices)
             
-        super().contract_alg(other,res,pos1,pos2)
+        super().contract_alg(other,res,tpos1,tpos2) # (*)
         if(len(res.tindices) == 0): 
             return res.comp
         else:
@@ -156,7 +194,7 @@ class _scalar(tindices_object):
         eta = self.STbundle.eta(u_d)
         res = eta*self
         res = res.swap_tindices(0,pos+2)
-        res = res.ttrace(0,1)
+        res = res.trace(0,1)
         return res
     
     def up(self,pos=0):
@@ -180,10 +218,10 @@ class _scalar(tindices_object):
 
         for k in range(0,len(self.tindices)):
             if(self.tindices[k] == "up"):
-                par = ((self*Ric_coef).swap_tindices(k,len(self.tindices))).ttrace(len(self.tindices),len(self.tindices)+1)
+                par = ((self*Ric_coef).swap_tindices(k,len(self.tindices))).trace(len(self.tindices),len(self.tindices)+1)
                 res += par
             elif(self.tindices[k] == "down"):
-                par = ((self*Ric_coef).swap_tindices(k,len(self.tindices)+1)).ttrace(len(self.tindices),len(self.tindices)+1)
+                par = ((self*Ric_coef).swap_tindices(k,len(self.tindices)+1)).trace(len(self.tindices),len(self.tindices)+1)
                 res += par
         
         return res

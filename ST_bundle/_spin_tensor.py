@@ -121,7 +121,7 @@ class _spin_tensor(tindices_object):
                 res_sindices_list = (self.sindices[0]+other.sindices[0],self.sindices[1]+other.sindices[1])
       
         res = _spin_tensor(self.STbundle,res_tindices_list,res_sindices_list)
-        super().tensor_product_alg(other,res,"*")
+        super().tensor_product_alg(other,res) # (*)
         return res
         
     def __rmul__(self,other):
@@ -136,16 +136,16 @@ class _spin_tensor(tindices_object):
             
         if(isinstance(other,_scalar)):
             res = _spin_tensor(self.STbundle,res_tindices_list,self.sindices)
-            super().tensor_product_alg(other,res,"*")
+            super().tensor_product_alg(other,res) # (*)
             
         elif(isinstance(other,_spin_tensor)):
             res_sindices_list = (self.sindices[0]+other.sindices[0]-1,self.sindices[1]+other.sindices[1]-1)
             res = _spin_tensor(self.STbundle,res_tindices_list,res_sindices_list)
-            super().tensor_product_alg(other,res,"@")
+            super().tensor_product_alg(other,res,sum(self.sindices)-1,0,"@")
         elif(isinstance(other,FreeModuleTensor)):
             res_sindices_list = (self.sindices[0]+other.tensor_type()[0]-1,self.sindices[1]+other.tensor_type()[1]-1)
             res = _spin_tensor(self.STbundle,res_tindices_list,res_sindices_list)
-            super().tensor_product_alg(other,res,"@")
+            super().tensor_product_alg(other,res,sum(self.sindices)-1,0,"@")
  
         return res
         
@@ -159,58 +159,195 @@ class _spin_tensor(tindices_object):
     def anticomm(self,other): #buggy for more that two indices objects
         res = self@other + (other@self).swap_tindices(0,1)
         return res
+    
+    def trace(self,*args): #trace on both sindices or tindices
         
-    def ttrace(self,pos1=0,pos2=1):
+        args = list(args) #I want to use remove
+        nargs = len(args)
+        if(nargs == 0): 
+            if(self.tindices == ["up","down"] or self.tindices == ["down","up"]):
+                tpos1 = 0
+                tpos2 = 1
+                spos1 = None
+                spos2 = None
+            else:
+                raise TypeError("At least two indices must be provided")
+        elif(nargs == 1):
+            if(args[0] == None):
+                tpos1 = None
+                tpos2 = None
+                spos1 = self.sindices[0]-1 #last of the upper sindices as default
+                spos2 = self.sindices[0] #first of the lower sindices as default
+            else:
+                raise TypeError("At least two indices must be provided")
+        elif(nargs == 2):
+            tpos1 = args[0]
+            tpos2 = args[1]
+            spos1 = None
+            spos2 = None
+        elif(nargs == 3):
+            if (None in args):
+                args.remove(None)
+                spos1 = args[0]
+                spos2 = args[1]
+                tpos1 = None
+                tpos2 = None
+            else: raise TypeError("Can't pass three indices as arguments")
+        elif(nargs == 4):
+            tpos1 = args[0]
+            tpos2 = args[1]
+            spos1 = args[2]
+            spos2 = args[3]
+        else:
+            raise TypeError("Too many arguments")    
+            
+        res_tindices_list = self.tindices
+        
+        if(tpos1 != None and tpos2 != None):   #####tindices trace
+            
+            tpos1,tpos2 = self.check_tindices(self,tpos1,tpos2,"trace")
+            #checks on spos1 and spos2 are done by trace() method in FreeTensorModule class
+            res_tindices_list = list(self.tindices)
+
+            for k in tpos1:
+                res_tindices_list[k] = None
+            for k in tpos2:
+                res_tindices_list[k] = None
+            for k in range(0,2*len(tpos1)):
+                res_tindices_list.remove(None) 
+
+            if((spos1 == None or spos2 == None)): #####tindices trace only
+                res = _spin_tensor(self.STbundle,res_tindices_list,self.sindices)
+                super().trace_alg(res,tpos1,tpos2) # (*)
+            else:                                 #####trace on both type of indices
+                res_sindices_list = (self.sindices[0]-1,self.sindices[1]-1)
+
+                if(res_sindices_list == (0,0)): #the contraction of sindices produces a scalar field
+                        res = _scalar(self.STbundle,res_tindices_list)
+                else:
+                        res = _spin_tensor(self.STbundle,res_tindices_list,res_sindices_list)
+                super().trace_alg(res,tpos1,tpos2,spos1,spos2, operator = "strace")
+        
+        
+        else: #if tpos1 or tpos2 are None -> no trace on tindices
+            
+            if(spos1 != None and spos2 != None): #sindices trace only
+                if((self.sindices[0]-1,self.sindices[1]-1) == (0,0)): #the contraction of sindices produces a scalar field
+                        res = _scalar(self.STbundle,self.tindices)
+                else:
+                        res = _spin_tensor(self.STbundle,self.tindices,(self.sindices[0]-1,self.sindices[1]-1))
+                lst_t,loop_command,indent = tindices_object.nested_loop("i",0,len(self.tindices),"","","")
+                if(len(self.tindices) == 0):
+                    loop_command += f"res.comp = self.comp.trace(spos1,spos2)"
+                else:
+                    loop_command += f"res[{lst_t[:-1]}] = self[{lst_t[:-1]}].trace(spos1,spos2)"
+                exec(loop_command)    
+            
+            else:
+                raise TypeError("Must provide tindices to trace")
                 
-        pos1,pos2 = self.check_tindices(self,pos1,pos2,"trace")
-        res_tindices_list = list(self.tindices)
-        
-        for k in pos1:
-            res_tindices_list[k] = None
-        for k in pos2:
-            res_tindices_list[k] = None
-        for k in range(0,2*len(pos1)):
-            res_tindices_list.remove(None) 
-        
-        res = _spin_tensor(self.STbundle,res_tindices_list,self.sindices)
-        super().trace_alg(res,pos1,pos2)
+                
         if(len(res.tindices) == 0): 
             return res.comp
         else:
             return res
-        
-    def strace(self,pos1,pos2):
-        res = _spin_tensor(self.STbundle,self.tindices,(self.sindices[0]-1,self.sindices[1]-1))
-        lst_t,loop_command,indent = tindices_object.nested_loop("i",0,len(self.tindices),"","","")
-        if(len(self.tindices) == 0):
-            loop_command += f"res.comp = self.comp.trace(pos1,pos2)"
-        else:
-            loop_command += f"res[{lst_t[:-1]}] = self[{lst_t[:-1]}].trace(pos1,pos2)"
-        exec(loop_command)
-        return res
             
-    def tcontract(self,pos1,other,pos2):
-                
-        pos1,pos2 = self.check_tindices(other,pos1,pos2,"contract")
+        
+    def contract(self,*args): #contraction on both sindices or tindices
+        
+        nargs = len(args)
+        for i, arg in enumerate(args):
+            if(isinstance(arg,tindices_object)):
+                other = arg
+                it = i
+                break
+            elif(isinstance(arg,FreeModuleTensor)):
+                other = _spin_tensor(self.STbundle,[],arg.tensor_type(),arg)
+                it = i
+                break
+        else:
+            raise TypeError("a tindices object must be provided in the argument list")
+        if(it == 0):
+            tpos1 = len(self.tindices)-1 #last as default
+            spos1 = sum(self.sindices)-1 #last as default
+        elif(it == 1):   
+            tpos1 = args[0]
+            spos1 = sum(self.sindices)-1
+        elif(it == 2):
+            if(isinstance(other,_scalar)): raise TypeError("sindices provided, but other is a scalar object")
+            tpos1 = args[0]
+            spos1 = args[1]
+        else:
+            raise TypeError("Too many arguments")
+
+        if(nargs-it-1 == 0):
+            tpos2 = 0 #first as default
+            spos2 = 0 #first as default
+        elif(nargs-it-1 == 1):
+            tpos2 = args[it+1]
+            spos2 = 0
+        elif(nargs-it-1 == 2):
+            if(isinstance(other,_scalar)): raise TypeError("sindices provided, but other is a scalar object")
+            tpos2 = args[it+1]
+            spos2 = args[it+2]
+        else:
+            raise TypeError("Too many arguments")
+            
+        if(isinstance(other,_scalar)): spos1,spos2 = None, None    
+            
         res_tindices_list = self.tindices+other.tindices
         
-        for k in pos1:
-            res_tindices_list[k] = None
-        for k in pos2:
-            res_tindices_list[k+len(self.tindices)] = None
-        for k in range(0,2*len(pos1)):
-            res_tindices_list.remove(None)
         
-        if(not isinstance(other,tindices_object)): raise TypeError("Can't contract with objects that are not tindices_object instances") 
-        
-        if(isinstance(other,_scalar)):
-            res = _spin_tensor(self.STbundle,res_tindices_list,self.sindices)
-            super().contract_alg(other,res,pos1,pos2,"*")
-        else:
-            res_sindices_list = (self.sindices[0]+other.sindices[0]-1,self.sindices[1]+other.sindices[1]-1)
-            res = _spin_tensor(self.STbundle,res_tindices_list,res_sindices_list)
-            super().contract_alg(other,res,pos1,pos2,"@")
+        if(tpos1 != None and tpos2 != None):   #####tindices contraction
             
+            tpos1,tpos2 = self.check_tindices(other,tpos1,tpos2,"contract")
+            #checks on spos1 and spos2 are done by contract() method in FreeTensorModule class
+            for k in tpos1:
+                res_tindices_list[k] = None
+            for k in tpos2:
+                res_tindices_list[k+len(self.tindices)] = None
+            for k in range(0,2*len(tpos1)):
+                res_tindices_list.remove(None)
+        
+            if((spos1 == None or spos2 == None)): #####tindices contraction only
+                
+                if(isinstance(other,_scalar)):
+                    res_sindices_list = self.sindices
+                else:
+                    res_sindices_list = (self.sindices[0]+other.sindices[0],self.sindices[1]+other.sindices[1])
+                    
+                res = _spin_tensor(self.STbundle,res_tindices_list,res_sindices_list)
+                super().contract_alg(other,res,tpos1,tpos2) # (*)
+                
+            else:                #####contraction on both type of indices
+                
+                res_sindices_list = (self.sindices[0]+other.sindices[0]-1,self.sindices[1]+other.sindices[1]-1)
+
+                if(res_sindices_list == (0,0)):
+                    res = _scalar(self.STbundle,res_tindices_list)
+                else:
+                    res = _spin_tensor(self.STbundle,res_tindices_list,res_sindices_list)
+
+                super().contract_alg(other,res,tpos1,tpos2,spos1,spos2,"@")
+        
+        
+        else: #if tpos1 or tpos2 are None -> no contraction on tindices
+            
+            if(spos1 != None and spos2 != None): #sindices contraction only
+            
+                res_sindices_list = (self.sindices[0]+other.sindices[0]-1,self.sindices[1]+other.sindices[1]-1)
+
+                if(res_sindices_list == (0,0)):
+                    res = _scalar(self.STbundle,res_tindices_list)
+                else:
+                    res = _spin_tensor(self.STbundle,res_tindices_list,res_sindices_list)
+
+                super().tensor_product_alg(other,res,spos1,spos2,"@")
+            
+            else:
+                raise TypeError("Must provide tindices to contract")
+                
+                
         if(len(res.tindices) == 0): 
             return res.comp
         else:
@@ -248,7 +385,7 @@ class _spin_tensor(tindices_object):
         eta = self.STbundle.eta(u_d)
         res = eta*self
         res = res.swap_tindices(0,pos+2)
-        res = res.ttrace(0,1)
+        res = res.trace(0,1)
         return res
     
     def up(self,pos=0):
@@ -278,10 +415,10 @@ class _spin_tensor(tindices_object):
 
         for k in range(0,len(self.tindices)):
             if(self.tindices[k] == "up"):
-                par = ((self*Ric_coef).swap_tindices(k,len(self.tindices))).ttrace(len(self.tindices),len(self.tindices)+1)
+                par = ((self*Ric_coef).swap_tindices(k,len(self.tindices))).trace(len(self.tindices),len(self.tindices)+1)
                 res += par
             elif(self.tindices[k] == "down"):
-                par = ((self*Ric_coef).swap_tindices(k,len(self.tindices)+1)).ttrace(len(self.tindices),len(self.tindices)+1)
+                par = ((self*Ric_coef).swap_tindices(k,len(self.tindices)+1)).trace(len(self.tindices),len(self.tindices)+1)
                 res -= par
         
         return res
@@ -296,10 +433,10 @@ class _spin_tensor(tindices_object):
         
         for k in range(0,sum(self.sindices)):
             if(k < self.sindices[0]): #upper indices (first k in indices of a tensor of type (k,l))
-                par = ((self*s_conn).swap_sindices(k,self.sindices[0])).strace(self.sindices[0],sum(self.sindices)+1)
+                par = ((self*s_conn).swap_sindices(k,self.sindices[0])).trace(None)
                 res += par
             elif(k >= self.sindices[0]): #lower indices (last l in indices of a tensor of type (k,l))
-                par = ((self*s_conn).swap_sindices(k+1,sum(self.sindices)+1)).strace(self.sindices[0],sum(self.sindices)+1)
+                par = ((self*s_conn).swap_sindices(k+1,sum(self.sindices)+1)).trace(None)
                 res -= par
         
         return res
@@ -316,18 +453,18 @@ class _spin_tensor(tindices_object):
                 
         for k in range(0,len(self.tindices)):
             if(self.tindices[k] == "up"):
-                par = ((self*Ric_coef).swap_tindices(k,len(self.tindices))).ttrace(len(self.tindices),len(self.tindices)+1)
+                par = ((self*Ric_coef).swap_tindices(k,len(self.tindices))).trace(len(self.tindices),len(self.tindices)+1)
                 res += par
             elif(self.tindices[k] == "down"):
-                par = ((self*Ric_coef).swap_tindices(k,len(self.tindices)+1)).ttrace(len(self.tindices),len(self.tindices)+1)
+                par = ((self*Ric_coef).swap_tindices(k,len(self.tindices)+1)).trace(len(self.tindices),len(self.tindices)+1)
                 res -= par
 
         for k in range(0,sum(self.sindices)):
             if(k < self.sindices[0]): #upper indices (first k in indices of a tensor of type (k,l))
-                par = ((self*s_conn).swap_sindices(k,self.sindices[0])).strace(self.sindices[0],sum(self.sindices)+1)
+                par = ((self*s_conn).swap_sindices(k,self.sindices[0])).trace(None)
                 res += par
             elif(k >= self.sindices[0]): #lower indices (last l in indices of a tensor of type (k,l))
-                par = ((self*s_conn).swap_sindices(k+1,sum(self.sindices)+1)).strace(self.sindices[0],sum(self.sindices)+1)
+                par = ((self*s_conn).swap_sindices(k+1,sum(self.sindices)+1)).trace(None)
                 res -= par
         return res
 

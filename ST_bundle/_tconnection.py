@@ -48,7 +48,7 @@ class _tconnection(BundleConnection):
         #D(V,T_{(a)...}^{(b)...})                                                         
         if(isinstance(tangent_section,VectorField)):
             comp = self.STbundle.set_scalar_from_Components(["up"],tangent_section.comp(self.STbundle.tframe))
-            res = comp.tcontract(0,res,len(res.tindices)-1)
+            res = res.contract(comp)
             return res
                 
         #D(e_{(c)},T_{(a)...}^{(b)...})  note: index (c) is the last in the object contructed                                                      

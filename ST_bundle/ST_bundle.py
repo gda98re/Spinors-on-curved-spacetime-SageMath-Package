@@ -220,7 +220,7 @@ class ST_bundle():
         
         Gamma = self.Dirac_matrices("up")
         Ric_coef_ddd = self.fb_coef.down(0)
-        res = (Integer(1)/4)*Ric_coef_ddd.tcontract([0,1],Gamma@Gamma,[0,1]) #Gamma_{(a)}^{i}_{j} connection
+        res = (Integer(1)/4)*Ric_coef_ddd.contract([0,1],Gamma@Gamma,[0,1]) #Gamma_{(a)}^{i}_{j} connection
         res.set_immutable()
         return res
 

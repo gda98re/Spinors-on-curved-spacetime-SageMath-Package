@@ -37,13 +37,13 @@ class tindices_object(abc.ABC):
         return self._comp
 
     @comp.setter
-    def comp(self,new_comp):
+    def comp(self,newcomp):
         if(len(self.tindices) != 0): 
             raise ValueError("Private attribute")	
         else:
-            if(self.comp_type != type(new_comp)): raise TypeError("Wrong type assignment")
+            if(self.comp_type != type(newcomp)): raise TypeError("Wrong type assignment")
             if(self.state == "Immutable"): raise ValueError("the components of an immutable element cannot be changed")
-            self._comp = new_comp
+            self._comp = newcomp
     
     @property
     def state(self):
@@ -61,7 +61,7 @@ class tindices_object(abc.ABC):
         self.state = "Immutable"
         lst,loop_command,indent = tindices_object.nested_loop("i",0,len(self.tindices),"","","")
         if(len(self.tindices) == 0):
-            loop_command += f"self._comp.set_immutable()"
+            loop_command += f"self.comp.set_immutable()"
         else:
             loop_command += f"self[{lst[:-1]}].set_immutable()"            
         exec(loop_command)
@@ -108,7 +108,7 @@ class tindices_object(abc.ABC):
 
         lst,loop_command,indent = tindices_object.nested_loop("i",0,len(self.tindices),"","","")
         if(len(self.tindices) == 0):
-            loop_command += f"res.comp = self._comp.copy()"
+            loop_command += f"res.comp = self.comp.copy()"
         else:
             loop_command += f"res[{lst[:-1]}] = self[{lst[:-1]}].copy()"            
         exec(loop_command)
@@ -150,14 +150,14 @@ class tindices_object(abc.ABC):
         
         return res
         
-    def tensor_product_alg(self,other,res,operator = "*"):
+    def tensor_product_alg(self,other,res,spos1 = 0,spos2 = 0,operator = "*"):
         
         if(operator == "*"):
             op = "*"
             end = ""
         elif(operator == "@"):
-            op = ".contract("
-            end = ")"
+            op = f".contract({spos1},"
+            end = f",{spos2})"
         else:
             return TypeError("Wrong operator type")
         
@@ -170,7 +170,10 @@ class tindices_object(abc.ABC):
         if(self.STbundle.tframe != other.STbundle.tframe): raise TypeError("Objects have components with respect to different frames")
     
         if(len(self.tindices) == 0 and len(other.tindices) == 0):
-            res.comp = self._comp*other._comp
+            if(operator == "*"):
+                res.comp = self.comp*other.comp
+            else:
+                res.comp = (self.comp).contract(spos1,other.comp,spos2)
             return res
     
         lst_self,loop_command,indent = tindices_object.nested_loop("i",0,len(self.tindices),"","","")
@@ -179,9 +182,9 @@ class tindices_object(abc.ABC):
         lst_res = lst_self + lst_other
         
         if(len(self.tindices) == 0):
-            loop_command += f"res[{lst_res[:-1]}] = self._comp{op}other[{lst_other[:-1]}]{end}"
+            loop_command += f"res[{lst_res[:-1]}] = self.comp{op}other[{lst_other[:-1]}]{end}"
         elif(len(other.tindices) == 0):
-            loop_command += f"res[{lst_res[:-1]}] = self[{lst_self[:-1]}]{op}other._comp{end}"
+            loop_command += f"res[{lst_res[:-1]}] = self[{lst_self[:-1]}]{op}other.comp{end}"
         else:
             loop_command += f"res[{lst_res[:-1]}] = self[{lst_self[:-1]}]{op}other[{lst_other[:-1]}]{end}"
          
@@ -189,13 +192,15 @@ class tindices_object(abc.ABC):
         return res
     
     def check_tindices(self,other,pos1,pos2,cont_type):
-        
+
         if(not isinstance(pos1,list)): pos1 = [pos1]
         if(not isinstance(pos2,list)): pos2 = [pos2]
 
         if(cont_type == "trace"):
+            if(len(self.tindices) <= 1): raise TypeError("Can't trace object with zero or one tindices")
             if(len(pos1)+len(pos2) > len(self.tindices)): raise TypeError("Too many indices")
         elif(cont_type == "contract"):
+            if(len(self.tindices) == 0 or len(other.tindices) == 0): raise TypeError("Can't contract object with no tindices")
             if(len(pos1)>len(self.tindices) or len(pos2)>len(other.tindices)): raise TypeError("Too many indices")
             
         if(len(pos1) != len(pos2)): raise TypeError("The set of tindices to contract must be of the same size ")
@@ -207,6 +212,7 @@ class tindices_object(abc.ABC):
         if(count != 0): raise TypeError("Can't trace two  up or two down indices ")
 
         return pos1,pos2
+    
     
     def trace_alg(self,res,pos1,pos2): #pos1 and pos2 must be lists
         
@@ -230,7 +236,7 @@ class tindices_object(abc.ABC):
         for k in range(0,len(lst_total)):
             lst = lst.replace(f"i{lst_total[k]},",f"i{k},")
 
-        if(len(self.tindices) == 2):
+        if(len(res.tindices) == 0):
             loop_command += f"res.comp += self[{lst[:-1]}]"
         else:
             loop_command += f"res[{lst_run[:-1]}] += self[{lst[:-1]}]"
@@ -239,22 +245,22 @@ class tindices_object(abc.ABC):
         
         return res
    
-    def contract_alg(self,other,res,pos1,pos2,operator = "*"):
+    def contract_alg(self,other,res,tpos1,tpos2,spos1 = 0,spos2 = 0,operator = "*"):
     
         if(operator == "*"):
             op = "*"
             end = ""
         elif(operator == "@"):
-            op = ".contract("
-            end = ")"
+            op = f".contract({spos1},"
+            end = f",{spos2})"
         else:
             return TypeError("Wrong operator type")
     
         if(len(self.tindices) == 0 or len(other.tindices) == 0): raise TypeError("Can't contract an object with zero tindices")
         
-        lst_run,loop_command,indent = tindices_object.nested_loop("i",0,len(self.tindices)-len(pos1),"","","")
-        lst_run,loop_command,indent = tindices_object.nested_loop("j",0,len(other.tindices)-len(pos2),lst_run,loop_command,indent)
-        _,loop_command,indent = tindices_object.nested_loop("s",0,len(pos1),"",loop_command,indent)  
+        lst_run,loop_command,indent = tindices_object.nested_loop("i",0,len(self.tindices)-len(tpos1),"","","")
+        lst_run,loop_command,indent = tindices_object.nested_loop("j",0,len(other.tindices)-len(tpos2),lst_run,loop_command,indent)
+        _,loop_command,indent = tindices_object.nested_loop("s",0,len(tpos1),"",loop_command,indent)  
         lst_total_self = [k for k in range(0,len(self.tindices))] # [0,1,2,...,number of tindices-1]
         lst_total_other = [k for k in range(0,len(other.tindices))]
         
@@ -266,18 +272,18 @@ class tindices_object(abc.ABC):
         for k in range(0,len(other.tindices)):
             lst_other += f"j{k},"
           
-        for k in range(0,len(pos1)):
-            lst_self = lst_self.replace(f"i{pos1[k]},",f"s{k},")
-            lst_total_self.remove(pos1[k])
-        for k in range(0,len(pos2)):
-            lst_other = lst_other.replace(f"j{pos2[k]},",f"s{k},")
-            lst_total_other.remove(pos2[k])
+        for k in range(0,len(tpos1)):
+            lst_self = lst_self.replace(f"i{tpos1[k]},",f"s{k},")
+            lst_total_self.remove(tpos1[k])
+        for k in range(0,len(tpos2)):
+            lst_other = lst_other.replace(f"j{tpos2[k]},",f"s{k},")
+            lst_total_other.remove(tpos2[k])
         for k in range(0,len(lst_total_self)):
             lst_self = lst_self.replace(f"i{lst_total_self[k]},",f"i{k},")
         for k in range(0,len(lst_total_other)):
             lst_other = lst_other.replace(f"j{lst_total_other[k]},",f"j{k},")
 
-        if(len(self.tindices) == 1 and len(other.tindices) == 1):
+        if(len(res.tindices) == 0):
             loop_command += f"res.comp += self[{lst_self[:-1]}]{op}other[{lst_other[:-1]}]{end}"
         else:
             loop_command += f"res[{lst_run[:-1]}] += self[{lst_self[:-1]}]{op}other[{lst_other[:-1]}]{end}"
