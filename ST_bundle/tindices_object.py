@@ -214,8 +214,16 @@ class tindices_object(abc.ABC):
         return pos1,pos2
     
     
-    def trace_alg(self,res,pos1,pos2): #pos1 and pos2 must be lists
+    def trace_alg(self,res,tpos1,tpos2,spos1,spos2,operator = "ttrace"): #pos1 and pos2 must be lists
         
+
+        if(operator == "ttrace"):
+            op = ""
+        elif(operator == "strace"):
+            op = ".trace(spos1,spos2)"
+        else:
+            raise TypeError("Wrong operator type")
+
         if(len(self.tindices) == 0 or len(self.tindices) == 1): raise TypeError("Can't trace an object with zero or one tindices")
         
         lst_run,loop_command,indent = tindices_object.nested_loop("i",0,len(self.tindices)-2*len(pos1),"","","")
@@ -237,9 +245,9 @@ class tindices_object(abc.ABC):
             lst = lst.replace(f"i{lst_total[k]},",f"i{k},")
 
         if(len(res.tindices) == 0):
-            loop_command += f"res.comp += self[{lst[:-1]}]"
+            loop_command += f"res.comp += self[{lst[:-1]}]{op}"
         else:
-            loop_command += f"res[{lst_run[:-1]}] += self[{lst[:-1]}]"
+            loop_command += f"res[{lst_run[:-1]}] += self[{lst[:-1]}]{op}"
         
         exec(loop_command)
         
