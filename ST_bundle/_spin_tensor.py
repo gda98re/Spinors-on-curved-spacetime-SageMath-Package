@@ -226,7 +226,7 @@ class _spin_tensor(tindices_object):
                         res = _scalar(self.STbundle,res_tindices_list)
                 else:
                         res = _spin_tensor(self.STbundle,res_tindices_list,res_sindices_list)
-                super().trace_alg(res,tpos1,tpos2,spos1,spos2, operator = "strace")
+                super().trace_alg(res,tpos1,tpos2,spos1,spos2,"strace")
         
         
         else: #if tpos1 or tpos2 are None -> no trace on tindices
