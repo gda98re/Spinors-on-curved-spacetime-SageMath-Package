@@ -97,7 +97,7 @@ class ST_bundle():
     
     def set_scalar_from_Components(self,tindices_list,Comp):
         
-        if(Comp._frame != self.tframe): raise TypeError("Components must be with respect to the tframe")
+        if(Comp._frame != self.tframe and Comp._frame != self.fframe): raise TypeError("Components must be with respect to the tframe")
         
         if(not isinstance(Comp,Components)): raise TypeError("Required argument is not a Components object")
         index_list = list(Comp.index_generator())

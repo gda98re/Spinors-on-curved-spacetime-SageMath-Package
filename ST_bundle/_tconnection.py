@@ -30,12 +30,9 @@ class _tconnection(BundleConnection):
         if(isinstance(tangent_section,VectorField) and section.parent() == self.STbundle.fbundle.section_module()):    
             return BundleConnection.__call__(self,tangent_section,section)
         
-        #D(e_{(a)},F)
-        if(tangent_section == self.STbundle.tframe and section.parent() == self.STbundle.fbundle.section_module()):
-            res = self.STbundle.scalar(["down"])
-            for i in range(0,4):
-                res[i] = BundleConnection.__call__(self,tangent_section[i],section)
-            return res
+        #converts section of the frame bundle to a one tindex scalar
+        if(section.parent() == self.STbundle.fbundle.section_module()):
+            section = self.STbundle.set_scalar_from_Components(["up"],section.comp())
         
         #convert a tensor on the spin bundle to a tindices object with no tindices or a tensor on the frame bundle to a scalar with tindces objects                                                        
         if(isinstance(section,FreeModuleTensor) and section.base_module() == self.STbundle.fbundle.section_module()): 
