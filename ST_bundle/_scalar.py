@@ -20,7 +20,7 @@ class _scalar(tindices_object):
         return f"{self.tindices} Tetrad index family of scalar fields on M with respect to the tetrad frame {self.STbundle.tframe}"
     
     def parent(self):
-        return tinidces_object
+        return tindices_object
     
     def __setitem__(self,pos_index,elem):
         if(not isinstance(elem,ScalarField)): raise TypeError("Can't assign something that is not a scalar field on M")
